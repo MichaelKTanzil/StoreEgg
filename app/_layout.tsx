@@ -1,39 +1,66 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import { Tabs } from "expo-router";
+import { store, persistor } from "@/redux";
+import { Provider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
+import React from "react";
+import { ActivityIndicator, Platform, View } from "react-native";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { HapticTab } from "@/components/HapticTab";
+import { IconSymbol } from "@/components/ui/IconSymbol";
+import TabBarBackground from "@/components/ui/TabBarBackground";
+import { Colors } from "@/constants/Colors";
+import { useColorScheme } from "@/hooks/useColorScheme";
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+const queryClient = new QueryClient();
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
-
-export default function RootLayout() {
+export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
 
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  if (!loaded) {
-    return null;
-  }
-
+  // Define main layout
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <Provider store={store}>
+        <PersistGate
+          persistor={persistor}
+          loading={
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <ActivityIndicator size="large" />
+            </View>
+          }
+        >
+          <Tabs
+            screenOptions={{
+              tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+              headerShown: false,
+              tabBarButton: HapticTab,
+              tabBarBackground: TabBarBackground,
+              tabBarStyle: Platform.select({
+                ios: {
+                  // Use a transparent background on iOS to show the blur effect
+                  position: "absolute",
+                },
+                default: {},
+              }),
+            }}
+          >
+            <Tabs.Screen name="index" options={{ href: null }} />
+            <Tabs.Screen
+              name="(home)"
+              options={{
+                tabBarStyle: { display: "none" },
+                title: "Home",
+                animation: "shift",
+              }}
+            />
+          </Tabs>
+        </PersistGate>
+      </Provider>
+    </QueryClientProvider>
   );
 }
